@@ -4,15 +4,7 @@ import pandas as pd
 import pytest
 
 from data_partitioner import FileFormat, rebalance
-
-
-def _make_frame(rows: int, start: int = 0) -> pd.DataFrame:
-    return pd.DataFrame(
-        {
-            "id": list(range(start, start + rows)),
-            "value": [f"v-{i}" for i in range(start, start + rows)],
-        }
-    )
+from tests.helpers import make_frame
 
 
 def test_rebalance_csv_target_rows(tmp_path) -> None:
@@ -20,8 +12,8 @@ def test_rebalance_csv_target_rows(tmp_path) -> None:
     output = tmp_path / "balanced"
     source.mkdir()
 
-    _make_frame(3, start=0).to_csv(source / "part_a.csv", index=False)
-    _make_frame(7, start=3).to_csv(source / "part_b.csv", index=False)
+    make_frame(3, start=0).to_csv(source / "part_a.csv", index=False)
+    make_frame(7, start=3).to_csv(source / "part_b.csv", index=False)
     (source / "ignore.txt").write_text("not a dataset")
 
     result = rebalance(
@@ -46,8 +38,8 @@ def test_rebalance_parquet_with_num_output_files(tmp_path) -> None:
     output = tmp_path / "balanced"
     source.mkdir()
 
-    _make_frame(5, start=0).to_parquet(source / "piece_1.parquet", index=False)
-    _make_frame(5, start=5).to_parquet(source / "piece_2.parquet", index=False)
+    make_frame(5, start=0).to_parquet(source / "piece_1.parquet", index=False)
+    make_frame(5, start=5).to_parquet(source / "piece_2.parquet", index=False)
 
     result = rebalance(
         input_path=source,

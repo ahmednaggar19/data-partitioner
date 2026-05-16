@@ -33,3 +33,15 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "performance: resource and timing benchmarks (may be slow; see docs/testing.md)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["data_partitioner"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true

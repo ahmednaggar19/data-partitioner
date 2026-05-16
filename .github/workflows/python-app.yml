@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   build:
@@ -28,12 +29,48 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8
         pip install ".[dev]"
+    - name: Prepare report directory
+      run: mkdir -p reports
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Unit tests with coverage
+      id: unit_tests
       run: |
-        pytest
+        pytest tests/ --ignore=tests/performance \
+          --cov=data_partitioner \
+          --cov-report=term-missing \
+          --cov-report=xml:reports/coverage.xml \
+          --cov-fail-under=90 \
+          --junitxml=reports/unit-junit.xml
+    - name: Performance tests
+      id: perf_tests
+      if: ${{ always() && steps.unit_tests.outcome != 'cancelled' }}
+      run: |
+        pytest tests/performance -m performance -v \
+          --junitxml=reports/perf-junit.xml
+      env:
+        PERF_SCALE: small
+    - name: Generate CI report
+      if: ${{ always() }}
+      run: python scripts/generate_ci_report.py
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_WORKFLOW: ${{ github.workflow }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+    - name: Publish job summary
+      if: ${{ always() }}
+      run: cat reports/ci-report.md >> "$GITHUB_STEP_SUMMARY"
+    - name: Comment CI report on pull request
+      if: ${{ github.event_name == 'pull_request' && always() }}
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: ci-test-report
+        path: reports/ci-report.md
