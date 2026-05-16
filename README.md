@@ -42,3 +42,14 @@ data-partitioner data/raw data/balanced --num-output-files 12 --output-format pa
 ## Current implementation notes
 
 Version `0.1.0` uses a straightforward in-memory approach (read all matched files, concatenate, repartition, write outputs). This gives a usable baseline quickly and is a good foundation for future large-scale/streaming optimizations.
+
+## Development
+
+- **Architecture & agent docs**: [docs/architecture.md](docs/architecture.md), [AGENTS.md](AGENTS.md)
+- **Testing**: [docs/testing.md](docs/testing.md)
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ --ignore=tests/performance --cov=data_partitioner --cov-fail-under=90
+pytest tests/performance -m performance -v
+```

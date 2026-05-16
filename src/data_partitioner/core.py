@@ -222,6 +222,7 @@ def _write_file(frame: pd.DataFrame, path: Path, file_format: FileFormat) -> Non
     if file_format == FileFormat.ORC:
         if not hasattr(frame, "to_orc"):
             raise RuntimeError("Your pandas version does not support ORC writing. Upgrade pandas/pyarrow.")
-        frame.to_orc(path, index=False)
+        # ORC writer requires a default RangeIndex; iloc slices keep source row labels.
+        frame.reset_index(drop=True).to_orc(path, index=False)
         return
     raise ValueError(f"Unsupported format: {file_format}")
