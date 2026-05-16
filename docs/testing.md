@@ -67,3 +67,6 @@ GitHub Actions (`.github/workflows/python-app.yml`):
 1. **Lint** — `flake8`
 2. **Unit tests** — pytest with coverage (performance excluded)
 3. **Performance** — pytest performance suite (`PERF_SCALE=small`)
+4. **Report** — `scripts/generate_ci_report.py` builds a markdown summary from JUnit XML, coverage XML, and performance JSON
+
+On pull requests, the report is posted as an updated sticky comment and attached to the workflow **Summary** tab for each run. On pushes to `master`, only the job summary is published.

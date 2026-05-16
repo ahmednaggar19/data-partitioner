@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
 import os
+from pathlib import Path
 
 import pytest
 
 from tests.helpers import make_frame
+
+_COLLECTED_PERFORMANCE_METRICS: list[dict[str, object]] = []
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -65,10 +69,25 @@ def uneven_parquet_dataset(tmp_path, perf_rows_per_file: int, perf_num_input_fil
 
 
 @pytest.fixture
-def performance_report(request: pytest.FixtureRequest) -> list[dict[str, object]]:
+def performance_report() -> list[dict[str, object]]:
     report: list[dict[str, object]] = []
     yield report
     if report:
-        request.node.user_properties.extend(
-            (key, value) for entry in report for key, value in entry.items()
-        )
+        _COLLECTED_PERFORMANCE_METRICS.extend(report)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    del session, exitstatus
+    if not _COLLECTED_PERFORMANCE_METRICS:
+        return
+
+    reports_dir = Path("reports")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "perf_scale": os.environ.get("PERF_SCALE", "small"),
+        "benchmarks": _COLLECTED_PERFORMANCE_METRICS,
+    }
+    (reports_dir / "performance-metrics.json").write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
