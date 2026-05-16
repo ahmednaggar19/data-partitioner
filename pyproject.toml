@@ -33,6 +33,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
     "performance: resource and timing benchmarks (may be slow; see docs/testing.md)",
 ]
