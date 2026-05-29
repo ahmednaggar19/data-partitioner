@@ -16,7 +16,7 @@ pip install -e .
 ## Python API
 
 ```python
-from data_partitioner import rebalance
+from data_partitioner import rebalance, rebalance_streaming
 
 result = rebalance(
     input_path="data/raw",
@@ -25,6 +25,15 @@ result = rebalance(
     output_format="parquet",
 )
 print(result.as_dict())
+
+# Bounded-memory streaming (large inputs)
+result = rebalance_streaming(
+    input_path="data/raw",
+    output_dir="data/balanced",
+    target_rows_per_file=100_000,
+    max_memory_mb=512,
+    output_format="parquet",
+)
 ```
 
 ## CLI

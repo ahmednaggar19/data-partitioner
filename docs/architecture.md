@@ -40,14 +40,16 @@ flowchart LR
 | Module | Path | Responsibility |
 |--------|------|----------------|
 | Package entry | `src/data_partitioner/__init__.py` | Public exports: `rebalance`, `FileFormat`, `RebalanceResult`, `__version__` |
-| Core | `src/data_partitioner/core.py` | Discovery, I/O, validation, partitioning, result model |
-| CLI | `src/data_partitioner/cli.py` | `argparse` wrapper around `rebalance()` |
+| Core | `src/data_partitioner/core.py` | Discovery, I/O, validation, partitioning, result model (V1 in-memory) |
+| Streaming | `src/data_partitioner/streaming.py` | Bounded-memory `rebalance_streaming()` |
+| CLI | `src/data_partitioner/cli.py` | `argparse` wrapper around `rebalance()` / `rebalance_streaming()` |
 
 ### Public API vs internal helpers
 
 **Exported (stable):**
 
-- `rebalance(...)` — main operation
+- `rebalance(...)` — in-memory rebalance (V1)
+- `rebalance_streaming(...)` — bounded-memory rebalance (V2)
 - `FileFormat` — `csv`, `parquet`, `orc`
 - `RebalanceResult` — summary dataclass with `as_dict()`
 
@@ -112,24 +114,15 @@ Non-matching extensions during directory discovery are **skipped** (not errors).
 | Empty `input_formats` | `ValueError` |
 | ORC unsupported in pandas build | `RuntimeError` |
 
-## Known limitations (V1)
+## Known limitations
 
-- **Memory**: entire dataset loaded into RAM (all input frames + combined frame + each output chunk).
-- **Scale**: suitable for moderate datasets; not streaming or distributed.
+- **In-memory mode** (`rebalance`): entire dataset loaded into RAM.
+- **Streaming mode** (`rebalance_streaming`): row-based partitions only; `num_output_files` is not supported.
 - **Schema**: column **names and order** must match; dtypes are not explicitly validated.
 - **Discovery**: `input_path` must be a file or directory (not object stores without a local mount).
 - **Determinism**: output file order follows slice order; input file order is sorted paths from discovery.
 
-## Planned evolution (not implemented)
-
-Documented direction for future work:
-
-- Chunked / streaming reads and writes
-- Pluggable backends (object storage, Spark/Dask)
-- Optional sort keys before partitioning
-- Dtype-preserving writers and stricter schema contracts
-
-When adding features, preserve the `rebalance()` result contract unless versioning explicitly breaks it.
+When adding features, preserve the `rebalance()` / `RebalanceResult` contract unless versioning explicitly breaks it.
 
 ## Repository layout
 

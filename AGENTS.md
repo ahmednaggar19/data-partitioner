@@ -17,6 +17,7 @@ Python library (alpha v0.1.0) that **rebalances uneven CSV/Parquet/ORC files** i
 ## Source of truth
 
 - **Core logic**: `src/data_partitioner/core.py` — `rebalance()`, `discover_input_files()`, I/O
+- **Streaming**: `src/data_partitioner/streaming.py` — `rebalance_streaming()` (bounded memory)
 - **CLI**: `src/data_partitioner/cli.py` — `data-partitioner` entry point
 - **Public exports**: `src/data_partitioner/__init__.py`
 
@@ -58,6 +59,4 @@ flake8 .
 - Committing without user request
 - Force-pushing `master`
 
-## Extension roadmap (context only)
-
-Future enhancements likely target: streaming I/O, object-store paths, distributed execution, and memory-bounded partitioning. V1 in-memory behavior is intentional baseline; see **Known limitations** in `docs/architecture.md`.
+See **Known limitations** in `docs/architecture.md` for V1 vs streaming behavior.

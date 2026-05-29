@@ -9,6 +9,8 @@ pip install -e ".[dev]"
 pytest tests/ --ignore=tests/performance --cov=data_partitioner --cov-report=term-missing
 ```
 
+Pytest is configured with `pythonpath = ["src", "."]` so tests use the local package under `src/` (not an older install in `site-packages`). After pulling changes, run `pip install -e ".[dev]"` if imports still look stale.
+
 Coverage is enforced in CI (`--cov-fail-under=90`).
 
 ### Test modules

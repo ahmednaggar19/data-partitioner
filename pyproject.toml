@@ -33,7 +33,8 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+# src: import local package (not stale site-packages); . : import tests.helpers
+pythonpath = ["src", "."]
 markers = [
     "performance: resource and timing benchmarks (may be slow; see docs/testing.md)",
 ]
