@@ -8,7 +8,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Callable, TypeVar
 
-from data_partitioner.core import RebalanceResult, rebalance
+from data_partitioner.core import RebalanceResult
 
 T = TypeVar("T")
 
@@ -48,15 +48,18 @@ class RebalancePerformanceMetrics:
         return json.dumps(self.as_dict(), indent=indent)
 
 
-def measure_rebalance(**rebalance_kwargs: object) -> tuple[RebalanceResult, RebalancePerformanceMetrics]:
-    input_path = Path(str(rebalance_kwargs["input_path"]))
-    output_dir = Path(str(rebalance_kwargs["output_dir"]))
+def measure_callable(
+    callable_fn: Callable[[], RebalanceResult],
+    *,
+    input_path: Path,
+    output_dir: Path,
+) -> tuple[RebalanceResult, RebalancePerformanceMetrics]:
     input_disk_bytes = directory_size_bytes(input_path)
 
     gc.collect()
     tracemalloc.start()
     started = perf_counter()
-    result = rebalance(**rebalance_kwargs)
+    result = callable_fn()
     elapsed_seconds = perf_counter() - started
     _, peak_traced_memory_bytes = tracemalloc.get_traced_memory()
     tracemalloc.stop()
@@ -74,6 +77,30 @@ def measure_rebalance(**rebalance_kwargs: object) -> tuple[RebalanceResult, Reba
         target_rows_per_file=result.target_rows_per_file,
     )
     return result, metrics
+
+
+def measure_rebalance(**rebalance_kwargs: object) -> tuple[RebalanceResult, RebalancePerformanceMetrics]:
+    from data_partitioner import rebalance
+
+    input_path = Path(str(rebalance_kwargs["input_path"]))
+    output_dir = Path(str(rebalance_kwargs["output_dir"]))
+    return measure_callable(
+        lambda: rebalance(**rebalance_kwargs),
+        input_path=input_path,
+        output_dir=output_dir,
+    )
+
+
+def measure_rebalance_streaming(**rebalance_kwargs: object) -> tuple[RebalanceResult, RebalancePerformanceMetrics]:
+    from data_partitioner import rebalance_streaming
+
+    input_path = Path(str(rebalance_kwargs["input_path"]))
+    output_dir = Path(str(rebalance_kwargs["output_dir"]))
+    return measure_callable(
+        lambda: rebalance_streaming(**rebalance_kwargs),
+        input_path=input_path,
+        output_dir=output_dir,
+    )
 
 
 def run_timed(callable_fn: Callable[[], T]) -> tuple[T, float]:

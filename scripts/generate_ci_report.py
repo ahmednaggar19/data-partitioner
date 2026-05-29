@@ -135,10 +135,17 @@ def build_report(
 
     if performance["status"] == "ok" and performance["benchmarks"]:
         scale = performance["perf_scale"] or "unknown"
+        benchmarks = performance["benchmarks"]
+        comparison = next(
+            (entry for entry in benchmarks if entry.get("test") == "streaming_vs_in_memory"),
+            None,
+        )
         lines.extend(["", f"**PERF_SCALE:** `{scale}`", ""])
         lines.append("| Benchmark | Time (s) | Memory (MB) | Input (MB) | Output (MB) | Rows |")
         lines.append("|-----------|----------|-------------|------------|-------------|------|")
-        for entry in performance["benchmarks"]:
+        for entry in benchmarks:
+            if entry.get("mode") or entry.get("test") == "streaming_vs_in_memory":
+                continue
             name = entry.get("test", "benchmark")
             lines.append(
                 "| {name} | {elapsed:.3f} | {mem:.3f} | {inp:.3f} | {out:.3f} | {rows:,} |".format(
@@ -149,6 +156,25 @@ def build_report(
                     out=float(entry.get("output_disk_mb", 0)),
                     rows=int(entry.get("total_rows", 0)),
                 )
+            )
+        if comparison:
+            lines.extend(
+                [
+                    "",
+                    "### In-memory vs streaming (200k row CSV)",
+                    "",
+                    f"Workload: {comparison['workload_rows']:,} rows, "
+                    f"{comparison['workload_input_mb']} MB on disk",
+                    "",
+                    "| Mode | Time (s) | Peak memory (MB) |",
+                    "|------|----------|------------------|",
+                    f"| `rebalance()` | {comparison['elapsed_s_in_memory']:.3f} | "
+                    f"{comparison['memory_mb_in_memory']:.3f} |",
+                    f"| `rebalance_streaming()` | {comparison['elapsed_s_streaming']:.3f} | "
+                    f"{comparison['memory_mb_streaming']:.3f} |",
+                    "",
+                    f"**Peak memory reduction:** {float(comparison['memory_reduction_ratio']) * 100:.1f}%",
+                ]
             )
     else:
         lines.append("")
