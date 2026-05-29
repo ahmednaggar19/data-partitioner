@@ -42,6 +42,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print output summary as JSON.",
     )
+    parser.add_argument(
+        "--streaming",
+        action="store_true",
+        help="Use bounded-memory streaming rebalance (requires --target-rows-per-file).",
+    )
+    parser.add_argument(
+        "--max-memory-mb",
+        type=int,
+        default=512,
+        help="Memory budget for streaming mode (default: 512).",
+    )
 
     sizing = parser.add_mutually_exclusive_group(required=True)
     sizing.add_argument(
@@ -61,16 +72,33 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    result = rebalance(
-        input_path=args.input_path,
-        output_dir=args.output_dir,
-        input_formats=args.input_formats,
-        output_format=args.output_format,
-        target_rows_per_file=args.target_rows_per_file,
-        num_output_files=args.num_output_files,
-        glob_pattern=args.glob_pattern,
-        output_prefix=args.output_prefix,
-    )
+    if args.streaming and args.num_output_files is not None:
+        raise SystemExit("--streaming requires --target-rows-per-file, not --num-output-files.")
+    if args.streaming and args.target_rows_per_file is None:
+        raise SystemExit("--streaming requires --target-rows-per-file.")
+
+    common_kwargs = {
+        "input_path": args.input_path,
+        "output_dir": args.output_dir,
+        "input_formats": args.input_formats,
+        "output_format": args.output_format,
+        "glob_pattern": args.glob_pattern,
+        "output_prefix": args.output_prefix,
+    }
+    if args.streaming:
+        from data_partitioner.streaming import rebalance_streaming
+
+        result = rebalance_streaming(
+            **common_kwargs,
+            target_rows_per_file=args.target_rows_per_file,
+            max_memory_mb=args.max_memory_mb,
+        )
+    else:
+        result = rebalance(
+            **common_kwargs,
+            target_rows_per_file=args.target_rows_per_file,
+            num_output_files=args.num_output_files,
+        )
     if args.json:
         print(json.dumps(result.as_dict(), indent=2))
     else:

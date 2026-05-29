@@ -54,6 +54,27 @@ def uneven_csv_dataset(tmp_path, perf_rows_per_file: int, perf_num_input_files: 
 
 
 @pytest.fixture
+def comparison_csv_dataset(tmp_path) -> tuple[Path, int]:
+    """
+    Fixed workload for in-memory vs streaming comparison (~200k rows, ~8MB CSV).
+
+    Sized so peak traced memory for rebalance() clearly exceeds streaming on typical CI runners.
+    """
+    source = tmp_path / "perf_compare_csv"
+    source.mkdir()
+    num_files = 8
+    rows_per_file = 25_000
+    row_cursor = 0
+    for index in range(num_files):
+        make_frame(rows_per_file, start=row_cursor).to_csv(
+            source / f"compare_{index:03d}.csv",
+            index=False,
+        )
+        row_cursor += rows_per_file
+    return source, row_cursor
+
+
+@pytest.fixture
 def uneven_parquet_dataset(tmp_path, perf_rows_per_file: int, perf_num_input_files: int):
     source = tmp_path / "perf_source_parquet"
     source.mkdir()

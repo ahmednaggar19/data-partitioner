@@ -9,6 +9,8 @@ pip install -e ".[dev]"
 pytest tests/ --ignore=tests/performance --cov=data_partitioner --cov-report=term-missing
 ```
 
+Pytest is configured with `pythonpath = ["src", "."]` so tests use the local package under `src/` (not an older install in `site-packages`). After pulling changes, run `pip install -e ".[dev]"` if imports still look stale.
+
 Coverage is enforced in CI (`--cov-fail-under=90`).
 
 ### Test modules
@@ -58,7 +60,16 @@ Example:
 PERF_SCALE=medium pytest tests/performance -m performance -v
 ```
 
-`tests/performance/metrics.py` provides `measure_rebalance()` and `RebalancePerformanceMetrics` for reuse in scripts or future regression baselines.
+`tests/performance/metrics.py` provides `measure_rebalance()`, `measure_rebalance_streaming()`, and `RebalancePerformanceMetrics`.
+
+### In-memory vs streaming comparison
+
+`test_streaming_comparison.py` runs both APIs on a fixed **200k-row CSV** workload (8 × 25k rows, ~2.8 MB on disk) and asserts streaming uses less peak traced memory. Results are written to `reports/performance-metrics.json` under `streaming_vs_in_memory`.
+
+```bash
+pytest tests/performance/test_streaming_comparison.py -m performance -v
+cat reports/performance-metrics.json
+```
 
 ## CI
 
